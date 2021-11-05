@@ -6,9 +6,31 @@ from multiprocessing import Process
 from aggregate import aggregate_parameters
 import time
 import json
+import torch
+from networks import TwoNN
+from utils import set_parameters, serialize_params, deserialize_params
 
 app = Flask(__name__)
 worker_ips = []
+
+central_model = TwoNN()
+
+def weighted_average_parameters(param_list, weights):
+
+	num_clients = len(param_list)
+	avg_params = []
+
+	for i, params in enumerate(param_list):
+
+		if (i == 0):
+			for p in params:
+				avg_params.append(p.clone()*weights[i])
+
+		else:
+			for j, p in enumerate(params):
+				avg_params[j].data += p.data*weights[i]
+
+	return avg_params
 
 def start_global_cycle(worker_ips):
 	for w_ip in worker_ips:
@@ -48,6 +70,11 @@ def result_submit():
 		results = []
 
 		return json.dumps({'payload': 'aggregating results'})
+
+@app.route("/get_parameters", methods=['GET'])
+def get_parameters():
+	print('serving parameters to:', route_req.remote_addr)
+	return serialize_params(central_model.parameters())
 
 print('discovering workers')
 notice_board_resp = requests.get('http://'+config_object.notice_board_ip+':'+str(config_object.notice_board_port)+'/notice_board')

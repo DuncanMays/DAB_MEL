@@ -28,7 +28,6 @@ def start_learning():
 	print('get received')
 
 	orchestrator_ip = route_req.remote_addr
-	print(orchestrator_ip)
 
 	def wrapper_fn(orch_ip):
 		result = client_update()

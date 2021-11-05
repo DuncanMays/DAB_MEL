@@ -1,0 +1,54 @@
+import torch
+import json
+
+# calculates the accuracy score of a prediction y_hat and the ground truth y
+I = torch.eye(10,10)
+def get_accuracy(y_hat, y):
+	y_vec = torch.tensor([I[int(i)].tolist() for i in y])
+	dot = torch.dot(y_hat.flatten(), y_vec.flatten())
+	return dot/torch.sum(y_hat)
+
+# gets the accuracy and loss of net on testing data
+TEST_BATCH_SIZE = 32
+def val_evaluation(net, x_test, y_test):
+
+	NUM_TEST_BATCHES = x_test.shape[0]//TEST_BATCH_SIZE
+
+	loss = 0
+	acc = 0
+
+	for i in range(NUM_TEST_BATCHES):
+		x_batch = x_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)]
+		y_batch = y_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)]
+
+		y_hat = net.forward(x_batch)
+
+		loss += criterion(y_hat, y_batch).item()
+		acc += get_accuracy(y_hat, y_batch).item()
+	
+	# normalizing the loss and accuracy
+	loss = loss/NUM_TEST_BATCHES
+	acc = acc/NUM_TEST_BATCHES
+
+	return loss, acc
+
+# sets the parameters of a neural net
+def set_parameters(net, params):
+	current_params = list(net.parameters())
+	for i, p in enumerate(params): 
+		current_params[i].data = p.data.clone()
+
+def serialize_params(params):
+	l = []
+	for p in params:
+		l.append(p.tolist())
+
+	return json.dumps(l)
+
+def deserialize_params(str_params):
+	params_lists = json.loads(str_params)
+	l = []
+	for p in params_lists:
+		l.append(torch.tensor(p))
+
+	return l
