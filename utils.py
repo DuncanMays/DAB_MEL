@@ -1,5 +1,16 @@
 import torch
 import json
+import requests
+from config import config_object
+
+def start_global_cycle(worker_ips):
+	for w_ip in worker_ips:
+		url = 'http://'+w_ip+':'+str(config_object.learner_port)+'/start_learning'
+		requests.get(url)
+
+def get_active_worker_ips():
+	notice_board_resp = requests.get('http://'+config_object.notice_board_ip+':'+str(config_object.notice_board_port)+'/notice_board')
+	return json.loads(notice_board_resp.content)
 
 # calculates the accuracy score of a prediction y_hat and the ground truth y
 I = torch.eye(10,10)

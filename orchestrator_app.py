@@ -8,7 +8,7 @@ import time
 import json
 import torch
 from networks import TwoNN
-from utils import set_parameters, serialize_params, deserialize_params
+from utils import set_parameters, serialize_params, deserialize_params, start_global_cycle, get_active_worker_ips
 
 app = Flask(__name__)
 worker_ips = []
@@ -32,42 +32,43 @@ def weighted_average_parameters(param_list, weights):
 
 	return avg_params
 
-def start_global_cycle(worker_ips):
-	for w_ip in worker_ips:
-		url = 'http://'+w_ip+':'+str(config_object.learner_port)+'/start_learning'
-		requests.get(url)
-
 num_results_submitted = 0
-results = []
+params = []
+weights = []
 @app.route("/result_submit", methods=['POST'])
 def result_submit():
 	print('post received')
 
-	global num_results_submitted, results
+	global num_results_submitted, params, weights
 
 	num_results_submitted += 1
 
-	if (num_results_submitted < len(worker_ips)):
+	# storing results
+	result = route_req.form
+	params.append(deserialize_params(result['params']))
+	weights.append(int(result['num_shards']))
 
-		results.append(route_req.form)
+	if (num_results_submitted < len(worker_ips)):
 
 		return json.dumps({'payload': 'storing result'})
 
 	else:
-		num_results_submitted = 0
-
-		results.append(route_req.form)
+		# we now aggregate the results
+		# normalizing all the weights
+		weights = [w/sum(weights) for w in weights]
 
 		# the function that we will run in a separate process
 		def wrapper_fn(a, b):
 			aggregate_parameters(a, b)
 			start_global_cycle(worker_ips)
 
-		# start process that runs separate from this thread
-		process = Process(target=wrapper_fn, args=(results, 'weights'))
+		# start a separate process that runs aggregates and assesses the parameters returned from workers
+		process = Process(target=wrapper_fn, args=(params, weights))
 		process.start()
 
-		results = []
+		num_results_submitted = 0
+		params = []
+		weights = []
 
 		return json.dumps({'payload': 'aggregating results'})
 
@@ -78,10 +79,9 @@ def get_parameters():
 
 print('discovering workers')
 notice_board_resp = requests.get('http://'+config_object.notice_board_ip+':'+str(config_object.notice_board_port)+'/notice_board')
-worker_ips = json.loads(notice_board_resp.content)
+worker_ips = get_active_worker_ips()
 
 print('starting '+str(len(worker_ips))+' workers')
-print(worker_ips)
 start_global_cycle(worker_ips)
 
 print('starting orchestration app')
