@@ -30,8 +30,15 @@ def start_learning():
 	orchestrator_ip = route_req.remote_addr
 	print(orchestrator_ip)
 
+	def wrapper_fn(orch_ip):
+		result = client_update()
+
+		print('training completed, submitting results')
+		result_url = 'http://'+orch_ip+':'+str(config_object.orchestrator_port)+'/result_submit'
+		requests.post(url=result_url, data=json.dumps(result))
+
 	# start process that runs separate from this thread
-	process = Process(target=client_update, args=(orchestrator_ip, ))
+	process = Process(target=wrapper_fn, args=(orchestrator_ip, ))
 	process.start()
 
 	return json.dumps({'payload': 'training now'})

@@ -20,13 +20,15 @@ def change_IPs():
 	print(remote_addr)
 
 	if (route_req.form['task'] == 'add'):
-		print('adding IP')
+		print('adding IP', end='')
 		# TODO change this to look if the IP is already in the list and not add it in that case
 		worker_IPs.add(remote_addr)
+		print(', now have '+str(len(worker_IPs))+' workers')
 
 	if (route_req.form['task'] == 'remove'):
-		print('removing IP')
+		print('removing IP', end='')
 		worker_IPs.remove(remote_addr)
+		print(', now have '+str(len(worker_IPs))+' workers')
 
 	return json.dumps(list(worker_IPs))
 

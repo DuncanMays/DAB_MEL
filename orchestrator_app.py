@@ -37,12 +37,12 @@ def result_submit():
 		results.append(route_req.form)
 
 		# the function that we will run in a separate process
-		def temp_fn(a, b):
+		def wrapper_fn(a, b):
 			aggregate_parameters(a, b)
 			start_global_cycle(worker_ips)
 
 		# start process that runs separate from this thread
-		process = Process(target=temp_fn, args=(results, 'weights'))
+		process = Process(target=wrapper_fn, args=(results, 'weights'))
 		process.start()
 
 		results = []
@@ -54,6 +54,7 @@ notice_board_resp = requests.get('http://'+config_object.notice_board_ip+':'+str
 worker_ips = json.loads(notice_board_resp.content)
 
 print('starting '+str(len(worker_ips))+' workers')
+print(worker_ips)
 start_global_cycle(worker_ips)
 
 print('starting orchestration app')
