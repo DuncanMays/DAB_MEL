@@ -57,4 +57,4 @@ print('starting '+str(len(worker_ips))+' workers')
 start_global_cycle(worker_ips)
 
 print('starting orchestration app')
-app.run(port=config_object.orchestrator_port)
+app.run(host='0.0.0.0', port=config_object.orchestrator_port)

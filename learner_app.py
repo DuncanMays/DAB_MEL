@@ -35,4 +35,4 @@ print('notifying notice board')
 notify_board()
 
 print('starting app')
-app.run(port=config_object.learner_port)
+app.run(host='0.0.0.0', port=config_object.learner_port)

@@ -31,4 +31,4 @@ def change_IPs():
 	return json.dumps(list(worker_IPs))
 
 print('starting app')
-app.run(port=config_object.notice_board_port)
+app.run(host='0.0.0.0', port=config_object.notice_board_port)
