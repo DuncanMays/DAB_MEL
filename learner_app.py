@@ -1,5 +1,6 @@
 from config import config_object
 from flask import Flask
+from flask import request as route_req
 from multiprocessing import Process
 from client_update import client_update
 import signal
@@ -14,8 +15,9 @@ def notify_board():
 	requests.post(url=notice_board_url, data={'task': 'add'})
 
 # TODO on signint, inform the notice board
-def shutdown_handler():
+def shutdown_handler(a, b):
 	requests.post(url=notice_board_url, data={'task': 'remove'})
+	exit()
 
 signal.signal(signal.SIGINT, shutdown_handler)
 
@@ -25,8 +27,11 @@ app = Flask(__name__)
 def start_learning():
 	print('get received')
 
+	orchestrator_ip = route_req.remote_addr
+	print(orchestrator_ip)
+
 	# start process that runs separate from this thread
-	process = Process(target=client_update, args=())
+	process = Process(target=client_update, args=(orchestrator_ip, ))
 	process.start()
 
 	return json.dumps({'payload': 'training now'})
