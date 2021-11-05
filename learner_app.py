@@ -11,7 +11,6 @@ import json
 notice_board_url = 'http://'+config_object.notice_board_ip+':'+str(config_object.notice_board_port)+'/notice_board'
 
 def notify_board():
-	print(notice_board_url)
 	requests.post(url=notice_board_url, data={'task': 'add'})
 
 # TODO on signint, inform the notice board
@@ -30,7 +29,7 @@ def start_learning():
 	orchestrator_ip = route_req.remote_addr
 
 	def wrapper_fn(orch_ip):
-		result = client_update()
+		result = client_update(orchestrator_ip)
 
 		print('training completed, submitting results')
 		result_url = 'http://'+orch_ip+':'+str(config_object.orchestrator_port)+'/result_submit'

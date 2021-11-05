@@ -37,7 +37,7 @@ params = []
 weights = []
 @app.route("/result_submit", methods=['POST'])
 def result_submit():
-	print('post received')
+	print('results posted at /result_submit')
 
 	global num_results_submitted, params, weights
 

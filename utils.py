@@ -21,6 +21,7 @@ def get_accuracy(y_hat, y):
 
 # gets the accuracy and loss of net on testing data
 TEST_BATCH_SIZE = 32
+criterion = torch.nn.CrossEntropyLoss()
 def val_evaluation(net, x_test, y_test):
 
 	NUM_TEST_BATCHES = x_test.shape[0]//TEST_BATCH_SIZE

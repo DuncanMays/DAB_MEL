@@ -4,15 +4,21 @@ import torch
 import json
 from config import config_object
 from networks import TwoNN
-from utils import set_parameters, serialize_params, deserialize_params
+from utils import set_parameters, serialize_params, deserialize_params, val_evaluation
 from tqdm import tqdm
 
 training_data_url = 'http://'+config_object.data_server_ip+':'+str(config_object.data_server_port)+'/get_training_data'
-parameters_url = 'http://'+config_object.orchestrator_ip+':'+str(config_object.orchestrator_port)+'/get_parameters'
 
 net = TwoNN()
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
+
+testing_data_url = 'http://'+config_object.data_server_ip+':'+str(config_object.data_server_port)+'/get_testing_data'
+data_resp = requests.post(url=testing_data_url, data={'num_shards': 20})
+testing_data = json.loads(data_resp.content)
+
+x_test = torch.tensor(testing_data['x_data'])/255.0
+y_test = torch.tensor(testing_data['y_data'])
 
 BATCH_SIZE = config_object.client_batch_size
 def train_network(x, y):
@@ -33,15 +39,17 @@ def train_network(x, y):
 			loss.backward()
 			optimizer.step()
 
-def client_update():
+def client_update(orchestrator_ip):
 	print('starting training process')
 
+	# the URL to return trained parameters to
+	parameters_url = 'http://'+orchestrator_ip+':'+str(config_object.orchestrator_port)+'/get_parameters'
+
 	# TODO run benchmarks and calculate this from them
-	num_shards = 20
+	num_shards = 50
 
 	print('downloading data')
 	data_resp = requests.post(url=training_data_url, data={'num_shards': num_shards})
-
 	training_data = json.loads(data_resp.content)
 
 	x_train = torch.tensor(training_data['x_data'])/255.0
@@ -53,6 +61,10 @@ def client_update():
 
 	print('training')
 	train_network(x_train, y_train)
+
+	loss, acc = val_evaluation(net, x_test, y_test)
+	print('training complete, network loss and accuracy is:')
+	print(loss, acc)
 
 	print('submitting result')
 	payload = {
