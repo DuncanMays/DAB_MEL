@@ -8,6 +8,11 @@ def start_global_cycle(worker_ips):
 		url = 'http://'+w_ip+':'+str(config_object.learner_port)+'/start_learning'
 		requests.get(url)
 
+def init_workers(worker_ips):
+	for w_ip in worker_ips:
+		url = 'http://'+w_ip+':'+str(config_object.learner_port)+'/init_procedure'
+		requests.get(url)
+
 def get_active_worker_ips():
 	notice_board_resp = requests.get('http://'+config_object.notice_board_ip+':'+str(config_object.notice_board_port)+'/notice_board')
 	return json.loads(notice_board_resp.content)
@@ -18,6 +23,16 @@ def get_accuracy(y_hat, y):
 	y_vec = torch.tensor([I[int(i)].tolist() for i in y])
 	dot = torch.dot(y_hat.flatten(), y_vec.flatten())
 	return dot/torch.sum(y_hat)
+
+def download_training_data(num_shards):
+	training_data_url = 'http://'+config_object.data_server_ip+':'+str(config_object.data_server_port)+'/get_training_data'
+	data_resp = requests.post(url=training_data_url, data={'num_shards': num_shards})
+	training_data = json.loads(data_resp.content)
+
+	x = torch.tensor(training_data['x_data'])/255.0
+	y = torch.tensor(training_data['y_data'])
+
+	return x, y
 
 # gets the accuracy and loss of net on testing data
 TEST_BATCH_SIZE = 32

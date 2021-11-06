@@ -6,6 +6,7 @@ primative = {
 	'client_num_epochs': 1,
 	'data_server_ip': '192.168.2.19',
 	'data_server_port': 5003,
+	'init_config_file': './init_config.json',
 	'learner_port': 5001,
 	'notice_board_ip': '192.168.2.19',
 	'notice_board_port': 5002,
