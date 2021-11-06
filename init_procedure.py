@@ -40,4 +40,5 @@ def subset_benchmark(num_download_shards = 1):
 	training_end_time = time.time()
 	training_time = training_end_time - training_start_time
 
-	return download_time/num_download_shards, training_time/num_download_shards
+	print('init function done')
+	return num_download_shards/download_time, num_download_shards/training_time

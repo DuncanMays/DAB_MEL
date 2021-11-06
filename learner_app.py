@@ -45,7 +45,7 @@ def start_learning():
 @app.route("/init_procedure", methods=['GET'])
 def init_procedure():
 
-	download_rate, training_rate = subset_benchmark(num_download_shards=1)
+	download_rate, training_rate = subset_benchmark(num_download_shards=10)
 
 	# the training deadline, in seconds
 	D = 60;
@@ -56,7 +56,7 @@ def init_procedure():
 	# mu is the number of training iterations, we should probably set this automatically, but for the time being this is fine
 	mu = 1;
 
-	num_shards = (D - 2*P_m/download_rate)/(mu/training_rate + P_d/download_rate)
+	num_shards = round((D - 2*P_m/download_rate)/(mu/training_rate + P_d/download_rate))
 
 	f = open(config_object.init_config_file, 'w')
 	f.write(json.dumps({'num_shards': num_shards}))
