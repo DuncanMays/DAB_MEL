@@ -1,9 +1,10 @@
 import time
 import torch
 from utils import download_training_data
-from networks import TwoNN
 from config import config_object
-ModelClass = TwoNN
+
+ModelClass = config_object.model_class
+device = config_object.training_device
 
 criterion = torch.nn.CrossEntropyLoss()
 BATCH_SIZE = config_object.client_batch_size

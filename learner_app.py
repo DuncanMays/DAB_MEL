@@ -34,7 +34,7 @@ def start_learning():
 
 		print('training completed, submitting results')
 		result_url = 'http://'+orch_ip+':'+str(config_object.orchestrator_port)+'/result_submit'
-		x=requests.post(url=result_url, data=result)
+		requests.post(url=result_url, data=result)
 
 	# start process that runs separate from this thread
 	process = Process(target=wrapper_fn, args=(orchestrator_ip, ))

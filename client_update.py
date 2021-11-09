@@ -3,11 +3,11 @@ import requests
 import torch
 import json
 from config import config_object
-from networks import TwoNN
-from utils import set_parameters, serialize_params, deserialize_params, download_training_data
+from utils import set_parameters, serialize_params, deserialize_params, download_training_data, val_evaluation
 from tqdm import tqdm
 
-ModelClass = TwoNN
+ModelClass = config_object.model_class
+device = config_object.training_device
 
 net = ModelClass()
 criterion = torch.nn.CrossEntropyLoss()
@@ -41,6 +41,7 @@ def client_update(orchestrator_ip):
 	# TODO read this from a file set by init
 	f = open(config_object.init_config_file, 'r')
 	num_shards = json.loads(f.read())['num_shards']
+	num_shards = 5
 	f.close()
 
 	print('downloading data for training')
@@ -49,6 +50,10 @@ def client_update(orchestrator_ip):
 	print('downloading parameters')
 	params_resp = requests.get(parameters_url)
 	set_parameters(net, deserialize_params(params_resp.content))
+
+	# print('testing parameters')
+	# loss, acc = val_evaluation(net, x_train, y_train)
+	# print(acc)
 
 	print('training')
 	train_network(x_train, y_train)

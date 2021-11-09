@@ -3,6 +3,8 @@ import json
 import requests
 from config import config_object
 
+device = config_object.training_device
+
 def start_global_cycle(worker_ips):
 	for w_ip in worker_ips:
 		url = 'http://'+w_ip+':'+str(config_object.learner_port)+'/start_learning'
@@ -20,7 +22,7 @@ def get_active_worker_ips():
 # calculates the accuracy score of a prediction y_hat and the ground truth y
 I = torch.eye(10,10)
 def get_accuracy(y_hat, y):
-	y_vec = torch.tensor([I[int(i)].tolist() for i in y])
+	y_vec = torch.tensor([I[int(i)].tolist() for i in y]).to(device)
 	dot = torch.dot(y_hat.flatten(), y_vec.flatten())
 	return dot/torch.sum(y_hat)
 
@@ -45,8 +47,8 @@ def val_evaluation(net, x_test, y_test):
 	acc = 0
 
 	for i in range(NUM_TEST_BATCHES):
-		x_batch = x_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)]
-		y_batch = y_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)]
+		x_batch = x_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)].to(device)
+		y_batch = y_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)].to(device)
 
 		y_hat = net.forward(x_batch)
 
