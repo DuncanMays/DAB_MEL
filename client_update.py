@@ -9,7 +9,7 @@ from tqdm import tqdm
 ModelClass = config_object.model_class
 device = config_object.training_device
 
-net = ModelClass()
+net = ModelClass().to(device)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
 
@@ -21,8 +21,8 @@ def train_network(x, y):
 	for i in range(config_object.client_num_epochs):
 		for j in tqdm(range(NUM_BATCHES)):
 
-			x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)]
-			y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)]
+			x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
+			y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
 
 			y_hat = net(x_batch)
 
@@ -34,13 +34,14 @@ def train_network(x, y):
 
 def client_update(orchestrator_ip):
 	print('starting training process')
+	global net
 
 	# the URL to return trained parameters to
 	parameters_url = 'http://'+orchestrator_ip+':'+str(config_object.orchestrator_port)+'/get_parameters'
 
 	# TODO read this from a file set by init
 	f = open(config_object.init_config_file, 'r')
-	num_shards = json.loads(f.read())['num_shards']
+	# num_shards = json.loads(f.read())['num_shards']
 	num_shards = 5
 	f.close()
 
@@ -49,7 +50,9 @@ def client_update(orchestrator_ip):
 
 	print('downloading parameters')
 	params_resp = requests.get(parameters_url)
+
 	set_parameters(net, deserialize_params(params_resp.content))
+	net = net.to(device)
 
 	# print('testing parameters')
 	# loss, acc = val_evaluation(net, x_train, y_train)

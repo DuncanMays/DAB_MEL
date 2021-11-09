@@ -11,7 +11,7 @@ BATCH_SIZE = config_object.client_batch_size
 
 def subset_benchmark(num_download_shards = 1):
 
-	dummy_model = ModelClass()
+	dummy_model = ModelClass().to(device)
 	dummy_optimizer = torch.optim.SGD([{'params': dummy_model.parameters()}], lr=config_object.client_learning_rate) 
 
 	print('downloading data for benchmark')
@@ -27,8 +27,8 @@ def subset_benchmark(num_download_shards = 1):
 
 	for j in range(NUM_BATCHES):
 
-		x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)]
-		y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)]
+		x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
+		y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
 
 		y_hat = dummy_model(x_batch)
 

@@ -1,13 +1,18 @@
 from config import config_object
 from flask import Flask
 from flask import request as route_req
-from multiprocessing import Process
+from multiprocessing import set_start_method
 from client_update import client_update
 from init_procedure import subset_benchmark
+from os import fork
 import signal
 import requests
 import time
 import json
+
+# see: https://pythonspeed.com/articles/python-multiprocessing/
+# TLDR: forking usually doesn't copy threads to the child processes, pytorch uses a thread to monitor async GPU operations, and so this line lets forks inherit threads
+set_start_method('spawn')
 
 notice_board_url = 'http://'+config_object.notice_board_ip+':'+str(config_object.notice_board_port)+'/notice_board'
 
@@ -34,18 +39,19 @@ def start_learning():
 
 		print('training completed, submitting results')
 		result_url = 'http://'+orch_ip+':'+str(config_object.orchestrator_port)+'/result_submit'
-		requests.post(url=result_url, data=result)
+		x = requests.post(url=result_url, data=result)
+		print(x.content)
 
-	# start process that runs separate from this thread
-	process = Process(target=wrapper_fn, args=(orchestrator_ip, ))
-	process.start()
-
-	return json.dumps({'payload': 'training now'})
+	if fork():
+		wrapper_fn(orchestrator_ip)
+		return json.dumps({'payload': 'this is the fork'})
+	else:	
+		return json.dumps({'payload': 'training now'})
 
 @app.route("/init_procedure", methods=['GET'])
 def init_procedure():
 
-	download_rate, training_rate = subset_benchmark(num_download_shards=10)
+	download_rate, training_rate = subset_benchmark(num_download_shards=50)
 
 	# the training deadline, in seconds
 	D = 60;

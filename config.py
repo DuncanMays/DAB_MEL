@@ -3,12 +3,12 @@ from networks import TwoNN
 import torch
 
 def set_training_device():
-	# if torch.cuda.is_available():
-	# 	return 'cuda:0'
-	# else:
-	# 	return 'cpu'
+	if torch.cuda.is_available():
+		return 'cuda:0'
+	else:
+		return 'cpu'
 
-	return 'cpu'
+	# return 'cpu'
 
 primative = {
 	'client_batch_size': 10,

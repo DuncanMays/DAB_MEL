@@ -2,7 +2,7 @@ from config import config_object
 from flask import Flask
 import requests
 from flask import request as route_req
-from multiprocessing import Process
+from os import fork
 from aggregate import aggregate_parameters, assess_parameters
 import time
 import json
@@ -42,7 +42,7 @@ def result_submit():
 		# normalizing all the weights
 		weights = [w/sum(weights) for w in weights]
 
-		# the function that we will run in a separate process
+		# we will run this function in a separate process
 		def wrapper_fn(a, b):
 			temp_net = config_object.model_class()
 
@@ -55,6 +55,8 @@ def result_submit():
 			print('aggregation process complete, network loss and accuracy is:')
 			print(loss, acc)
 
+			# we now submit the aggregated parameters to the main process
+
 			payload = {
 				'params': serialize_params(temp_net.parameters())
 			}
@@ -65,23 +67,25 @@ def result_submit():
 
 			start_global_cycle(worker_ips)
 
-		# start a separate process that runs aggregates and assesses the parameters returned from workers
-		process = Process(target=wrapper_fn, args=(params, weights))
-		process.start()
+		if fork():
+			wrapper_fn(params, weights)
 
-		num_results_submitted = 0
-		params = []
-		weights = []
+			return json.dumps({'payload': 'this is the fork'})
+		else:		
+			num_results_submitted = 0
+			params = []
+			weights = []
 
-		return json.dumps({'payload': 'aggregating results'})
+			return json.dumps({'payload': 'aggregating results'})
 
 @app.route("/get_parameters", methods=['GET'])
 def get_parameters():
+	global central_model
 	print('serving parameters to:', route_req.remote_addr)
 	return serialize_params(central_model.parameters())
 
 @app.route('/set_central_parameters', methods=['POST'])
-def set_central_paameters():
+def set_central_parameters():
 	global central_model
 	new_params = deserialize_params(route_req.form['params'])
 	set_parameters(central_model, new_params)

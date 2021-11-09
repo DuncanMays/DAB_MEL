@@ -46,6 +46,8 @@ def val_evaluation(net, x_test, y_test):
 	loss = 0
 	acc = 0
 
+	net = net.to(device)
+
 	for i in range(NUM_TEST_BATCHES):
 		x_batch = x_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)].to(device)
 		y_batch = y_test[TEST_BATCH_SIZE*i : TEST_BATCH_SIZE*(i+1)].to(device)
