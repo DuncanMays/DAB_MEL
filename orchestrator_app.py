@@ -43,22 +43,25 @@ def result_submit():
 		# normalizing all the weights
 		weights = [w/sum(weights) for w in weights]
 
-		# resetting trackers
-		num_results_submitted = 0
-		params = []
-		weights = []
-
 		# we will run this function in a separate process
-		def wrapper_fn(a, b):
+		def wrapper_fn(params_list, weights):
 			temp_net = config_object.model_class()
 
-			new_params = aggregate_parameters(a, b)
+			# print('assessing accuracy of '+str(len(params_list))+' returned parameters')
+			# for p in params_list:
+			# 	new_params = p
+			# 	set_parameters(temp_net, new_params)
+			# 	loss, acc = assess_parameters(temp_net)
+			# 	print('accuracy of returned network is: ', end='')
+			# 	print(acc)
+
+			new_params = aggregate_parameters(params_list, weights)
 
 			set_parameters(temp_net, new_params)
 
 			loss, acc = assess_parameters(temp_net)
 
-			print('aggregation process complete, network loss and accuracy is:')
+			print('aggregation process complete, network loss and accuracy is: ', end='')
 			print(loss, acc)
 
 			# we now submit the aggregated parameters to the main process
@@ -74,11 +77,18 @@ def result_submit():
 			start_global_cycle(worker_ips)
 
 		if fork():
+			# aggregates and assesses parameters
 			wrapper_fn(params, weights)
+
+			# resetting trackers
+			num_results_submitted = 0
+			params = []
+			weights = []
 
 			return json.dumps({'payload': 'this is the fork'})
 
 		else:
+			
 			return json.dumps({'payload': 'aggregating results'})
 
 @app.route("/get_parameters", methods=['GET'])
