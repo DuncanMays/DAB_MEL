@@ -39,8 +39,14 @@ def result_submit():
 
 	else:
 		# we now aggregate the results
+
 		# normalizing all the weights
 		weights = [w/sum(weights) for w in weights]
+
+		# resetting trackers
+		num_results_submitted = 0
+		params = []
+		weights = []
 
 		# we will run this function in a separate process
 		def wrapper_fn(a, b):
@@ -71,11 +77,8 @@ def result_submit():
 			wrapper_fn(params, weights)
 
 			return json.dumps({'payload': 'this is the fork'})
-		else:		
-			num_results_submitted = 0
-			params = []
-			weights = []
 
+		else:
 			return json.dumps({'payload': 'aggregating results'})
 
 @app.route("/get_parameters", methods=['GET'])

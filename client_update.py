@@ -54,12 +54,16 @@ def client_update(orchestrator_ip):
 	set_parameters(net, deserialize_params(params_resp.content))
 	net = net.to(device)
 
-	# print('testing parameters')
-	# loss, acc = val_evaluation(net, x_train, y_train)
-	# print(acc)
+	print('testing parameters')
+	loss, acc = val_evaluation(net, x_train, y_train)
+	print(acc)
 
 	print('training')
 	train_network(x_train, y_train)
+
+	print('testing parameters')
+	loss, acc = val_evaluation(net, x_train, y_train)
+	print(acc)
 
 	print('submitting result')
 	payload = {
