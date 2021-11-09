@@ -51,24 +51,28 @@ def start_learning():
 @app.route("/init_procedure", methods=['GET'])
 def init_procedure():
 
-	download_rate, training_rate = subset_benchmark(num_download_shards=50)
+	if fork():
+		download_rate, training_rate = subset_benchmark(num_download_shards=50)
 
-	# the training deadline, in seconds
-	D = 60;
-	# P_d is the amount of data in each data shard, which is one since a data shard was the measurement unit
-	P_d = 1;
-	# P_m is the amount of data in the model's parameters, which must be expressed as a ratio wrt the size of a data shard
-	P_m = 0.354;
-	# mu is the number of training iterations, we should probably set this automatically, but for the time being this is fine
-	mu = 1;
+		# the training deadline, in seconds
+		D = 60;
+		# P_d is the amount of data in each data shard, which is one since a data shard was the measurement unit
+		P_d = 1;
+		# P_m is the amount of data in the model's parameters, which must be expressed as a ratio wrt the size of a data shard
+		P_m = 0.354;
+		# mu is the number of training iterations, we should probably set this automatically, but for the time being this is fine
+		mu = 1;
 
-	num_shards = round((D - 2*P_m/download_rate)/(mu/training_rate + P_d/download_rate))
+		num_shards = round((D - 2*P_m/download_rate)/(mu/training_rate + P_d/download_rate))
 
-	f = open(config_object.init_config_file, 'w')
-	f.write(json.dumps({'num_shards': num_shards}))
-	f.close()
+		f = open(config_object.init_config_file, 'w')
+		f.write(json.dumps({'num_shards': num_shards}))
+		f.close()
 
-	return json.dumps({'payload': 'running benchmarks'})
+		return json.dumps({'payload': 'this is the fork'})
+
+	else:
+		return json.dumps({'payload': 'running benchmarks'})
 
 print('notifying notice board')
 notify_board()
