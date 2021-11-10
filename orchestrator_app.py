@@ -6,7 +6,6 @@ from os import fork
 from aggregate import aggregate_parameters, assess_parameters
 import time
 import json
-import torch
 from utils import set_parameters, serialize_params, deserialize_params, start_global_cycle, get_active_worker_ips
 
 app = Flask(__name__)

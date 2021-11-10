@@ -15,10 +15,10 @@ optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.cli
 
 def train_network(x, y):
 
-	BATCH_SIZE = x.shape[0]//config.client_batches_per_epoch
+	BATCH_SIZE = x.shape[0]//config_object.client_batches_per_epoch
 
 	for i in range(config_object.client_num_epochs):
-		for j in tqdm(range(config.client_batches_per_epoch)):
+		for j in tqdm(range(config_object.client_batches_per_epoch)):
 
 			x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
 			y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)

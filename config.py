@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from networks import TwoNN, ThreeNN
+from networks import TwoNN, ThreeNN, ConvNet
 import torch
 
 def set_training_device():
@@ -21,6 +21,7 @@ primative = {
 	'notice_board_ip': '192.168.2.19',
 	'notice_board_port': 5002,
 	'orchestrator_port': 5000,
+	'sample_shape': [784],
 	'training_device': set_training_device()
 }
 

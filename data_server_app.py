@@ -20,11 +20,14 @@ y_test_raw = raw_data[1][1]
 
 # formatting into sample shape
 
-x_train = torch.tensor(x_train_raw, dtype=torch.float32).reshape([-1, 784])
-x_test = torch.tensor(x_test_raw, dtype=torch.float32).reshape([-1, 784])
+sample_shape = config_object.sample_shape
+
+x_train = torch.tensor(x_train_raw, dtype=torch.float32).reshape([-1]+sample_shape)
+x_test = torch.tensor(x_test_raw, dtype=torch.float32).reshape([-1]+sample_shape)
 
 y_train = torch.tensor(y_train_raw, dtype=torch.long)
 y_test = torch.tensor(y_test_raw, dtype=torch.long)
+
 # splitting into shards
 
 num_train_shards = x_train.shape[0]//shard_size
@@ -37,10 +40,15 @@ x_test = x_test[0: num_test_shards*shard_size]
 y_test = y_test[0: num_test_shards*shard_size]
 
 # reshaping
-x_train = x_train.unsqueeze(dim=0).reshape([num_train_shards, -1, 784])
+x_train = x_train.unsqueeze(dim=0).reshape([num_train_shards, -1]+sample_shape)
 y_train = y_train.unsqueeze(dim=0).reshape([num_train_shards, -1])
-x_test = x_test.unsqueeze(dim=0).reshape([num_test_shards, -1, 784])
+x_test = x_test.unsqueeze(dim=0).reshape([num_test_shards, -1]+sample_shape)
 y_test = y_test.unsqueeze(dim=0).reshape([num_test_shards, -1])
+
+print(x_train.shape)
+print(y_train.shape)
+print(x_test.shape)
+print(y_test.shape)
 
 app = Flask(__name__)
 
@@ -53,7 +61,7 @@ def get_training_data():
 
 	indices = torch.randperm(x_train.shape[0])[0: num_shards]
 
-	x_data = x_train[indices].reshape([-1, 784])
+	x_data = x_train[indices].reshape([-1]+sample_shape)
 	y_data = y_train[indices].reshape([-1])
 
 	payload = {'x_data': x_data.tolist(), 'y_data': y_data.tolist()}
@@ -69,7 +77,7 @@ def get_testing_data():
 
 	indices = torch.randperm(x_test.shape[0])[0: num_shards]
 
-	x_data = x_test[indices].reshape([-1, 784])
+	x_data = x_test[indices].reshape([-1]+sample_shape)
 	y_data = y_test[indices].reshape([-1])
 
 	payload = {'x_data': x_data.tolist(), 'y_data': y_data.tolist()}
