@@ -19,6 +19,25 @@ class TwoNN(torch.nn.Module):
 
         return x
 
+class ThreeNN(torch.nn.Module):
+
+    def __init__(self):
+        super(ThreeNN, self).__init__()
+        
+        self.fc1 = torch.nn.Linear(784, 500)
+        self.fc2 = torch.nn.Linear(500, 300)
+        self.fc3 = torch.nn.Linear(300, 100)
+        self.fc4 = torch.nn.Linear(100, 10)
+
+    def forward(self, x):
+        
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.softmax(self.fc4(x), dim=1)
+
+        return x
+
 class FFnet(torch.nn.Module):
 
     def __init__(self):

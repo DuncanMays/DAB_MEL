@@ -13,13 +13,12 @@ net = ModelClass().to(device)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
 
-BATCH_SIZE = config_object.client_batch_size
 def train_network(x, y):
 
-	NUM_BATCHES = x.shape[0]//BATCH_SIZE
+	BATCH_SIZE = x.shape[0]//config.client_batches_per_epoch
 
 	for i in range(config_object.client_num_epochs):
-		for j in tqdm(range(NUM_BATCHES)):
+		for j in tqdm(range(config.client_batches_per_epoch)):
 
 			x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
 			y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
@@ -42,7 +41,7 @@ def client_update(orchestrator_ip):
 	# TODO read this from a file set by init
 	f = open(config_object.init_config_file, 'r')
 	# num_shards = json.loads(f.read())['num_shards']
-	num_shards = 5
+	num_shards = 120
 	f.close()
 
 	print('downloading data for training')

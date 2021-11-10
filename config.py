@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from networks import TwoNN
+from networks import TwoNN, ThreeNN
 import torch
 
 def set_training_device():
@@ -10,6 +10,7 @@ def set_training_device():
 
 primative = {
 	'client_batch_size': 10,
+	'client_batches_per_epoch': 100,
 	'client_learning_rate': 0.1,
 	'client_num_epochs': 1,
 	'data_server_ip': '192.168.2.19',
