@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 from init_procedure import subset_benchmark
 from client_update import train_network
 from utils import download_training_data
@@ -102,8 +104,10 @@ def real_task():
 
 	train_network(x_train, y_train)
 
+gradient_update(5)
+
 x = [i+1 for i in range(50)]
-y = [time_train_on_dataset(10*i) for i in x]
+y = [time_gradient_update(10*i) for i in x]
 
 plt.plot(x, y)
 # plt.plot(x, x)
