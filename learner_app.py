@@ -3,7 +3,7 @@ from flask import Flask
 from flask import request as route_req
 from multiprocessing import set_start_method
 from client_update import client_update
-from init_procedure import subset_benchmark
+from init_procedure import subset_benchmark, get_model_size
 from os import fork
 import signal
 import requests
@@ -38,7 +38,7 @@ def start_learning():
 		result = client_update(orchestrator_ip)
 
 		print('training completed, submitting results')
-		result_url = 'http://'+orch_ip+':'+str(config_object.orchestrator_port)+'/result_submit'
+		result_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/result_submit'
 		x = requests.post(url=result_url, data=result)
 		print(x.content)
 
@@ -52,7 +52,8 @@ def start_learning():
 def init_procedure():
 
 	if fork():
-		download_rate, training_rate = subset_benchmark(num_download_shards=50)
+		download_rate, training_rate = subset_benchmark(num_shards=50)
+		model_size = get_model_size()
 
 		# the training deadline, in seconds
 		D = 60;
@@ -66,7 +67,10 @@ def init_procedure():
 		num_shards = round((D - 2*P_m/download_rate)/(mu/training_rate + P_d/download_rate))
 
 		f = open(config_object.init_config_file, 'w')
-		f.write(json.dumps({'num_shards': num_shards}))
+		f.write(json.dumps({
+			'num_shards': num_shards,
+			'model_size': model_size
+		}))
 		f.close()
 
 		return json.dumps({'payload': 'this is the fork'})

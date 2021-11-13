@@ -1,4 +1,5 @@
 ./init_config.json
+./benchmarking_experiments/prediction_accuracies.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

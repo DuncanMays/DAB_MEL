@@ -18,25 +18,24 @@ net = ThreeNN().to(device)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
 
-# x_global, y_global = download_training_data(120)
-
 print('importing data')
+x_global, y_global = download_training_data(120)
 
-raw_data = mnist.load_data()
+# raw_data = mnist.load_data()
 
-print('preprocessing')
+# print('preprocessing')
 
-shard_size = 500
+# shard_size = 500
 
-x_train_raw = raw_data[0][0]
-y_train_raw = raw_data[0][1]
+# x_train_raw = raw_data[0][0]
+# y_train_raw = raw_data[0][1]
 
-# formatting into sample shape
+# # formatting into sample shape
 
-sample_shape = config_object.sample_shape
+# sample_shape = config_object.sample_shape
 
-x_global = torch.tensor(x_train_raw, dtype=torch.float32).reshape([-1]+sample_shape)
-y_global = torch.tensor(y_train_raw, dtype=torch.long)
+# x_global = torch.tensor(x_train_raw, dtype=torch.float32).reshape([-1]+sample_shape)
+# y_global = torch.tensor(y_train_raw, dtype=torch.long)
 
 def gradient_update(num_samples=32):
 
@@ -106,10 +105,16 @@ def real_task():
 
 gradient_update(5)
 
-x = [i+1 for i in range(50)]
+x = [i+1 for i in range(12)]
 y = [time_gradient_update(10*i) for i in x]
 
 plt.plot(x, y)
 # plt.plot(x, x)
+
+print(y)
+
+z = [y[i+1] - y[i] for i in range(0, len(y)-1)]
+
+print(z)
 
 plt.show()

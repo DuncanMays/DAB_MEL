@@ -26,11 +26,9 @@ def FLOPS_benchmark():
 	return i*ops/(end - start)
 
 ModelClass = config_object.model_class
-# device = config_object.training_device
-device = 'cpu'
-
+device = config_object.training_device
+BATCH_SIZE = 32
 criterion = torch.nn.CrossEntropyLoss()
-BATCH_SIZE = config_object.client_batch_size
 
 def real_task(num_shards = 1):
 
@@ -44,18 +42,21 @@ def real_task(num_shards = 1):
 
 	download_time = download_end_time - download_start_time
 
-	NUM_BATCHES = x.shape[0]//BATCH_SIZE
-
 	training_start_time = time.time()
 
-	for j in range(NUM_BATCHES):
+	NUM_BATCHES = x.shape[0]//BATCH_SIZE
 
-		x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
-		y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
+	for i in range(1):
+		
+		loss = torch.tensor(0, dtype=torch.float32).to(device)
 
-		y_hat = model(x_batch)
+		for j in range(NUM_BATCHES):
+			x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
+			y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
 
-		loss = criterion(y_hat, y_batch)
+			y_hat = model(x_batch)
+
+			loss += criterion(y_hat, y_batch)
 
 		optimizer.zero_grad()
 		loss.backward()

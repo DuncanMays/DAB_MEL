@@ -45,11 +45,6 @@ y_train = y_train.unsqueeze(dim=0).reshape([num_train_shards, -1])
 x_test = x_test.unsqueeze(dim=0).reshape([num_test_shards, -1]+sample_shape)
 y_test = y_test.unsqueeze(dim=0).reshape([num_test_shards, -1])
 
-print(x_train.shape)
-print(y_train.shape)
-print(x_test.shape)
-print(y_test.shape)
-
 app = Flask(__name__)
 
 @app.route("/get_training_data", methods=['POST'])
@@ -57,7 +52,7 @@ def get_training_data():
 	print('request received at get_training_data')
 
 	# the number of shards being requested
-	num_shards = int(route_req.form['num_shards'])
+	num_shards = min(120, int(route_req.form['num_shards']))
 
 	indices = torch.randperm(x_train.shape[0])[0: num_shards]
 
@@ -73,7 +68,7 @@ def get_testing_data():
 	print('request received at get_testing_data')
 
 	# the number of shards being requested
-	num_shards = int(route_req.form['num_shards'])
+	num_shards = min(20, int(route_req.form['num_shards']))
 
 	indices = torch.randperm(x_test.shape[0])[0: num_shards]
 
