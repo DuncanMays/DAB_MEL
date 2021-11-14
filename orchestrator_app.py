@@ -16,14 +16,20 @@ device = config_object.training_device
 central_model = config_object.model_class()
 central_model.to(device)
 
+max_global_cycles = 5
+num_global_cycles = 0
 num_results_submitted = 0
 params = []
 weights = []
+
+training_stats = []
+training_stats.append(assess_parameters(central_model))
+
 @app.route("/result_submit", methods=['POST'])
 def result_submit():
 	print('results posted at /result_submit')
 
-	global num_results_submitted, params, weights
+	global num_results_submitted, params, weights, num_global_cycles, max_global_cycles
 
 	num_results_submitted += 1
 
@@ -38,6 +44,7 @@ def result_submit():
 
 	else:
 		# we now aggregate the results
+		num_global_cycles += 1
 
 		# normalizing all the weights
 		weights = [w/sum(weights) for w in weights]
@@ -63,6 +70,8 @@ def result_submit():
 			print('aggregation process complete, network loss and accuracy is: ', end='')
 			print(loss, acc)
 
+			training_stats.append((loss, acc))
+
 			# we now submit the aggregated parameters to the main process
 
 			payload = {
@@ -73,7 +82,15 @@ def result_submit():
 
 			requests.post(url=set_url, data=payload)
 
-			start_global_cycle(worker_ips)
+			if (num_global_cycles < max_global_cycles):
+				start_global_cycle(worker_ips)
+
+			else:
+				print('done training, saving results')
+
+				f = open('training_results.json', 'a')
+				f.write(json.dumps(training_stats))
+				f.close()
 
 		if fork():
 			# aggregates and assesses parameters
