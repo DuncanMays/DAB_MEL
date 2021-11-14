@@ -12,7 +12,7 @@ import json
 task_size = 120
 FLOPS_ratio = 3.029233303987113e-15
 
-SB_sizes = [1, 2, 4, 8, 32]
+SB_sizes = [1, 2, 4, 8]
 
 # initializing cuda
 subset_benchmark(num_shards=1)

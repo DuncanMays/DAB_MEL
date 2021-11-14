@@ -42,8 +42,8 @@ def real_task(num_shards = 1):
 
 	download_time = download_end_time - download_start_time
 
+	print('training')
 	training_start_time = time.time()
-
 	NUM_BATCHES = x.shape[0]//BATCH_SIZE
 
 	for i in range(1):
@@ -56,11 +56,11 @@ def real_task(num_shards = 1):
 
 			y_hat = model(x_batch)
 
-			loss += criterion(y_hat, y_batch)
+			loss = criterion(y_hat, y_batch)
 
-		optimizer.zero_grad()
-		loss.backward()
-		optimizer.step()
+			optimizer.zero_grad()
+			loss.backward()
+			optimizer.step()
 
 	training_end_time = time.time()
 	training_time = training_end_time - training_start_time
