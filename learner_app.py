@@ -52,24 +52,20 @@ def start_learning():
 def init_procedure():
 
 	if fork():
-		download_rate, training_rate = subset_benchmark(num_shards=50)
+		download_rate, training_rate = subset_benchmark(num_shards=8)
 		model_size = get_model_size()
 
 		# the training deadline, in seconds
-		D = 60;
-		# P_d is the amount of data in each data shard, which is one since a data shard was the measurement unit
-		P_d = 1;
-		# P_m is the amount of data in the model's parameters, which must be expressed as a ratio wrt the size of a data shard
-		P_m = 0.354;
-		# mu is the number of training iterations, we should probably set this automatically, but for the time being this is fine
-		mu = 1;
+		D = 10;
 
-		num_shards = round((D - 2*P_m/download_rate)/(mu/training_rate + P_d/download_rate))
+		num_shards = round((D - 2*model_size/download_rate)/(config_object.client_num_updates/training_rate + 1/download_rate))
 
 		f = open(config_object.init_config_file, 'w')
 		f.write(json.dumps({
 			'num_shards': num_shards,
-			'model_size': model_size
+			'model_size': model_size,
+			'download_rate': download_rate,
+			'training_rate': training_rate
 		}))
 		f.close()
 

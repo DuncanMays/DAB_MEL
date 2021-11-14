@@ -6,7 +6,7 @@ from os import fork
 from aggregate import aggregate_parameters, assess_parameters
 import time
 import json
-from utils import set_parameters, serialize_params, deserialize_params, start_global_cycle, get_active_worker_ips
+from utils import set_parameters, serialize_params, deserialize_params
 
 app = Flask(__name__)
 worker_ips = []
@@ -102,13 +102,6 @@ def set_central_parameters():
 	new_params = deserialize_params(route_req.form['params'])
 	set_parameters(central_model, new_params)
 	return json.dumps({'payload': 'central network updated'})
-
-print('discovering workers')
-notice_board_resp = requests.get('http://'+str(config_object.notice_board_ip)+':'+str(config_object.notice_board_port)+'/notice_board')
-worker_ips = get_active_worker_ips()
-
-print('starting '+str(len(worker_ips))+' workers')
-start_global_cycle(worker_ips)
 
 print('starting orchestration app')
 app.run(host='0.0.0.0', port=config_object.orchestrator_port)

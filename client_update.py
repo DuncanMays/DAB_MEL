@@ -11,17 +11,18 @@ device = config_object.training_device
 
 net = ModelClass().to(device)
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
 
 def train_network(x, y):
+	global net
+	optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
 
-	# BATCH_SIZE = max(1, x.shape[0]//config_object.client_batches_per_epoch)
-
-	BATCH_SIZE = config_object.client_batch_size
+	BATCH_SIZE = 32
 	NUM_BATCHES = max(1, x.shape[0]//BATCH_SIZE)
 
-	for i in range(config_object.client_num_epochs):
+	for i in range(config_object.client_num_updates):
+		
 		for j in tqdm(range(NUM_BATCHES)):
+			# loss = torch.tensor(0, dtype=torch.float32).to(device)
 
 			x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
 			y_batch = y[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
@@ -29,22 +30,21 @@ def train_network(x, y):
 			y_hat = net(x_batch)
 
 			loss = criterion(y_hat, y_batch)
-
+		
 			optimizer.zero_grad()
 			loss.backward()
 			optimizer.step()
 
 def client_update(orchestrator_ip):
 	print('starting training process')
-	global net
+	global net, optimizer
 
 	# the URL to return trained parameters to
 	parameters_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/get_parameters'
 
 	# TODO read this from a file set by init
 	f = open(config_object.init_config_file, 'r')
-	# num_shards = json.loads(f.read())['num_shards']
-	num_shards = 120
+	num_shards = json.loads(f.read())['num_shards']
 	f.close()
 
 	print('downloading data for training')
