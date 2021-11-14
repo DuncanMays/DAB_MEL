@@ -26,8 +26,6 @@ def subset_benchmark(num_shards = 1):
 	loss = torch.tensor(0, dtype=torch.float32).to(device)
 	training_start_time = time.time()
 
-	dummy_optimizer.zero_grad()
-
 	for j in range(NUM_BATCHES):
 
 		x_batch = x[BATCH_SIZE*j: BATCH_SIZE*(j+1)].to(device)
@@ -35,10 +33,11 @@ def subset_benchmark(num_shards = 1):
 
 		y_hat = dummy_model(x_batch)
 
-		loss += criterion(y_hat, y_batch)
+		loss = criterion(y_hat, y_batch)
 
-	loss.backward()
-	dummy_optimizer.step()
+		dummy_optimizer.zero_grad()
+		loss.backward()
+		dummy_optimizer.step()
 
 	training_end_time = time.time()
 	training_time = training_end_time - training_start_time

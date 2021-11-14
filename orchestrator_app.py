@@ -144,6 +144,8 @@ def allocate(worker_characteristics):
 		weight = (c_k+b_k)/total_training_rate
 		num_shards = round(weight*total_shards)
 
+		print(num_shards)
+
 		tau = max(1, round((c_k/num_shards)*(T-(2*p_m + num_shards)/(b_k))))
 
 		info_obj = {
