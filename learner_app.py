@@ -3,7 +3,7 @@ from flask import Flask
 from flask import request as route_req
 from multiprocessing import set_start_method
 from client_update import client_update
-from init_procedure import subset_benchmark, get_model_size
+from init_procedure import subset_benchmark, get_model_size, get_training_time_limit
 from os import fork
 import signal
 import requests
@@ -55,17 +55,20 @@ def init_procedure():
 		download_rate, training_rate = subset_benchmark(num_shards=8)
 		model_size = get_model_size()
 
-		# the training deadline, in seconds
-		D = 10;
+		deadline = int(get_training_time_limit())
 
-		num_shards = round((D - 2*model_size/download_rate)/(config_object.client_num_updates/training_rate + 1/download_rate))
+		print('training time limit is:', deadline)
+
+		num_shards = round((deadline - 2*model_size/download_rate)/(config_object.client_num_updates/training_rate + 1/download_rate))
 
 		f = open(config_object.init_config_file, 'w')
 		f.write(json.dumps({
 			'num_shards': num_shards,
 			'model_size': model_size,
+			'num_iterations': config_object.client_num_updates,
 			'download_rate': download_rate,
-			'training_rate': training_rate
+			'training_rate': training_rate,
+			'deadline': config_object.client_training_time
 		}))
 		f.close()
 
@@ -73,6 +76,51 @@ def init_procedure():
 
 	else:
 		return json.dumps({'payload': 'running benchmarks'})
+
+@app.route("/baseline_init_start", methods=['GET'])
+def baseline_init_start():
+
+	if fork():
+		download_rate, training_rate = subset_benchmark(num_shards=8)
+		model_size = get_model_size()
+
+		info = {
+			'download_rate': download_rate,
+			'training_rate': training_rate,
+			'model_size': model_size
+		}
+
+		DA_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/submit_characteristcs'
+		requests.post(url=DA_url, data=info)
+
+		return json.dumps({'payload': 'this is the fork'})
+
+	else:
+		return json.dumps({'payload': 'running benchmarks'})
+
+@app.route("/baseline_init_end", methods=['POST'])
+def baseline_init_end():
+
+	print(route_req.form)
+
+	info = route_req.form
+
+	num_shards = info['num_shards']
+	num_iterations = info['num_iterations']
+	model_size = info['model_size']
+
+	f = open(config_object.init_config_file, 'w')
+	f.write(json.dumps({
+		'num_shards': num_shards,
+		'model_size': model_size,
+		'num_iterations': num_iterations,
+		'download_rate': 0,
+		'training_rate': 0,
+		'deadline': config_object.client_training_time
+	}))
+	f.close()
+
+	return json.dumps({'payload': 'recorded info'})
 
 print('notifying notice board')
 notify_board()

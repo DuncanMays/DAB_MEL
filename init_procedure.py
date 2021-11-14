@@ -62,3 +62,7 @@ def get_model_size():
 	params_size = len(params_resp.content)
 
 	return params_size/training_data_size
+
+training_time_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/get_training_time_limit'
+def get_training_time_limit():
+	return requests.get(training_time_url).content

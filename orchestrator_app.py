@@ -6,7 +6,7 @@ from os import fork
 from aggregate import aggregate_parameters, assess_parameters
 import time
 import json
-from utils import set_parameters, serialize_params, deserialize_params
+from utils import set_parameters, serialize_params, deserialize_params, get_active_worker_ips, start_global_cycle
 
 app = Flask(__name__)
 worker_ips = []
@@ -26,6 +26,7 @@ def result_submit():
 	global num_results_submitted, params, weights
 
 	num_results_submitted += 1
+	print(num_results_submitted)
 
 	# storing results
 	result = route_req.form
@@ -87,6 +88,10 @@ def result_submit():
 			return json.dumps({'payload': 'this is the fork'})
 
 		else:
+			# resetting trackers
+			num_results_submitted = 0
+			params = []
+			weights = []
 			
 			return json.dumps({'payload': 'aggregating results'})
 
@@ -103,5 +108,84 @@ def set_central_parameters():
 	set_parameters(central_model, new_params)
 	return json.dumps({'payload': 'central network updated'})
 
-print('starting orchestration app')
+@app.route('/get_training_time_limit', methods=['GET'])
+def get_training_time_limit():
+	return str(config_object.client_training_time)
+
+total_shards = 120
+def allocate(worker_characteristics):
+	l = []
+
+	total_training_rate = sum([float(w['training_rate']) for w in worker_characteristics])
+
+	for w in worker_characteristics:
+		c_k = float(w['training_rate'])
+
+		weight = c_k/total_training_rate
+		num_shards = round(weight*total_shards)
+
+		p_m = float(w['model_size'])
+		T = config_object.client_training_time
+		b_k = float(w['download_rate'])
+
+		tau = round((c_k/num_shards)*(T-(2*p_m + num_shards)/(b_k)))
+
+		info_obj = {
+			'ip_addr': w['ip_addr'],
+			'model_size': p_m,
+			'num_iterations': tau,
+			'num_shards': num_shards
+		}
+
+		l.append(info_obj)
+
+	return l
+
+worker_characteristics = []
+@app.route('/submit_characteristcs', methods=['POST'])
+def submit_characteristcs():
+	global worker_ips, worker_characteristics
+
+	info_obj = {
+		'ip_addr': route_req.remote_addr,
+		'download_rate': route_req.form['download_rate'],
+		'training_rate': route_req.form['training_rate'],
+		'model_size': route_req.form['model_size']
+	}
+
+	worker_characteristics.append(info_obj)
+
+	if (len(worker_characteristics) < len(worker_ips)):
+		return json.dumps({'payload': 'storing characteristcs'})
+
+	else:
+		def wrapper_fn(worker_characteristics):
+			allocation = allocate(worker_characteristics)
+
+			for a in allocation:
+				url = 'http://'+a['ip_addr']+':'+str(config_object.learner_port)+'/baseline_init_end'
+				form = {
+					'num_iterations': a['num_iterations'],
+					'num_shards': a['num_shards'],
+					'model_size': a['model_size']
+				}
+
+				requests.post(url=url, data=form)
+
+			return
+
+		if fork():
+			wrapper_fn(worker_characteristics)
+
+			worker_characteristics = []
+
+			return json.dumps({'payload': 'this is the fork'})
+
+		else:
+			return json.dumps({'payload': 'processing characteristics'})			
+
+
+worker_ips = get_active_worker_ips()
+
+print('starting orchestration app for '+str(len(worker_ips))+' workers')
 app.run(host='0.0.0.0', port=config_object.orchestrator_port)
