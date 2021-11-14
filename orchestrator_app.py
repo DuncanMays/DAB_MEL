@@ -26,7 +26,6 @@ def result_submit():
 	global num_results_submitted, params, weights
 
 	num_results_submitted += 1
-	print(num_results_submitted)
 
 	# storing results
 	result = route_req.form
@@ -117,18 +116,18 @@ def allocate(worker_characteristics):
 	l = []
 
 	total_training_rate = sum([float(w['training_rate']) for w in worker_characteristics])
+	total_training_rate += sum([float(w['download_rate']) for w in worker_characteristics])
 
 	for w in worker_characteristics:
 		c_k = float(w['training_rate'])
-
-		weight = c_k/total_training_rate
-		num_shards = round(weight*total_shards)
-
 		p_m = float(w['model_size'])
 		T = config_object.client_training_time
 		b_k = float(w['download_rate'])
 
-		tau = round((c_k/num_shards)*(T-(2*p_m + num_shards)/(b_k)))
+		weight = (c_k+b_k)/total_training_rate
+		num_shards = round(weight*total_shards)
+
+		tau = max(1, round((c_k/num_shards)*(T-(2*p_m + num_shards)/(b_k))))
 
 		info_obj = {
 			'ip_addr': w['ip_addr'],
