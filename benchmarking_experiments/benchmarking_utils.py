@@ -5,8 +5,6 @@ sys.path.append('..')
 from config import config_object
 from utils import download_training_data
 
-device = 'cpu'
-
 def FLOPS_benchmark():
 
 	n = 512
@@ -42,7 +40,7 @@ def real_task(num_shards = 1):
 
 	download_time = download_end_time - download_start_time
 
-	print('training')
+	print('training on '+device)
 	training_start_time = time.time()
 	NUM_BATCHES = x.shape[0]//BATCH_SIZE
 

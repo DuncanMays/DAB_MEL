@@ -55,11 +55,12 @@ def init_procedure():
 		download_rate, training_rate = subset_benchmark(num_shards=8)
 		model_size = get_model_size()
 
-		deadline = int(get_training_time_limit())
+		deadline = get_training_time_limit()
 
 		print('training time limit is:', deadline)
 
 		num_shards = round((deadline - 2*model_size/download_rate)/(config_object.client_num_updates/training_rate + 1/download_rate))
+		num_shards = max(1, num_shards)
 
 		f = open(config_object.init_config_file, 'w')
 		f.write(json.dumps({

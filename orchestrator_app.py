@@ -16,7 +16,7 @@ device = config_object.training_device
 central_model = config_object.model_class()
 central_model.to(device)
 
-max_global_cycles = 5
+max_global_cycles = 10
 num_global_cycles = 0
 num_results_submitted = 0
 params = []

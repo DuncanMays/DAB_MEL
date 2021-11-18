@@ -1,1 +1,1 @@
-{"num_shards": "120", "model_size": "2.106674337768189", "num_iterations": "9", "download_rate": 0, "training_rate": 0, "deadline": 15}
+{"num_shards": 135, "model_size": 6.159290751382526, "num_iterations": 5, "download_rate": 11.270655492669164, "training_rate": 39.91097281892446, "deadline": 30}

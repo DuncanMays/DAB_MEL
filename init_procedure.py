@@ -22,6 +22,8 @@ def subset_benchmark(num_shards = 1):
 
 	download_time = download_end_time - download_start_time
 
+	print('training model on '+device)
+
 	NUM_BATCHES = x.shape[0]//BATCH_SIZE
 	loss = torch.tensor(0, dtype=torch.float32).to(device)
 	training_start_time = time.time()
@@ -64,4 +66,4 @@ def get_model_size():
 
 training_time_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/get_training_time_limit'
 def get_training_time_limit():
-	return requests.get(training_time_url).content
+	return int(requests.get(training_time_url).content)

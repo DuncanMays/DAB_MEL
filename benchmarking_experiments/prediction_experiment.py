@@ -4,6 +4,7 @@ from init_procedure import subset_benchmark
 from utils import download_training_data
 from benchmarking_utils import real_task, FLOPS_benchmark
 from config import config_object
+import numpy as np
 import torch
 import time
 import json
@@ -12,12 +13,14 @@ import json
 task_size = 120
 FLOPS_ratio = 3.029233303987113e-15
 
-SB_sizes = [1, 2, 4, 8]
+SB_sizes = [2, 4, 6, 8]
+num_trials = 15
+labels = ['FLOPS']+SB_sizes
+avg_training_errors = np.array([0.0 for i in range(len(labels))])
 
 # initializing cuda
 subset_benchmark(num_shards=1)
 
-num_trials = 15
 for i in range(num_trials):
 	print('running benchmarks')
 	scores = [subset_benchmark(num_shards=n) for n in SB_sizes]
@@ -36,9 +39,10 @@ for i in range(num_trials):
 	FLOPS_prediction = task_size*FLOPS_ratio*FLOPS
 	FLOPS_error = abs(FLOPS_prediction - real_training)/real_training
 
-	labels = ['FLOPS']+SB_sizes
 	training_errors = [FLOPS_error] + training_errors
 	network_errors = [-1] + network_errors
+
+	avg_training_errors += training_errors
 
 	print('recording data')
 	f = open('prediction_accuracies.json', 'a')
@@ -49,3 +53,12 @@ for i in range(num_trials):
 		print('method:', labels[i], end=' | ')
 		print('training error:', training_errors[i], end=' | ')
 		print('network error:', network_errors[i])
+
+print('--------------------------------------------------------------------------------')
+print('calculating average over '+str(num_trials)+' trials')
+
+avg_training_errors = avg_training_errors/num_trials
+
+for i in range(len(avg_training_errors)):
+		print('method:', labels[i], end=' | ')
+		print('training error:', avg_training_errors[i])
