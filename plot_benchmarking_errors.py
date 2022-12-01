@@ -42,24 +42,15 @@ data = [SB_2, SB_4, SB_6, SB_8]
 flops_data = [flops for d in data]
 
 x = [2, 4, 6, 8]
-y_ticks = [i for i in range(13)]
+y_ticks = [i for i in range(0, 15, 2)]
 
-plt.plot(x, data, label='Subset Benchmark')
-plt.plot(x, flops_data, label='FLOPS')
+plt.plot(x, data, color='red', label='SB')
+plt.plot(x, flops_data, color='green', label='FLOPS')
 
 plt.xticks(ticks=x, size=font_size)
 plt.yticks(ticks=y_ticks, size=font_size)
 plt.ylabel('Average Runtime Benchmarking Error (%)', size=font_size)
-plt.xlabel('Benchmark Size (shards)', size=font_size)
+plt.xlabel('Benchmark Size (data shards)', size=font_size)
 
 plt.legend(prop={'size': font_size})
 plt.show()
-
-
-
-
-
-
-
-
-

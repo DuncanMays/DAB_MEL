@@ -1,0 +1,41 @@
+// n is the number of data shards used in the benchmark
+// dummy_model has the same neural architecture as client_model, but they have separate parameters
+// clock() returns the time in seconds on a monotonic clock
+// download_data(a) downloads a shards of data, where a is an integer
+// train(data, model) trains model on data
+
+download_start_time = clock()
+//download n shards of data
+sb_data = download_data(n)
+download_end_time = clock()
+
+download_time = download_end_time - download_start_time
+b_k = n/download_time
+
+train_start_time = clock()
+//train dummy model on n shards of data
+train_end_time = clock()
+
+train_time = train_end_time - train_start_time
+
+//the number of data shards the learner will download is stored in numb_shards and is calculated from equation 4
+
+for num_global_cycles iterations:
+
+    //download num_shards randomly selected data shards
+    data = download_data(num_shards)
+
+    //gets the most recent set of parameters from the orchestrator and sets client_model to use them
+    w_o = get_parameters()
+    set_parameters(client_model, w_o)
+
+    for mu iterations:
+        //trains the client model on the downloaded data
+        train(client_model, data)
+
+    //sends the parameters back to the orchestrator, with num_shards for weighted averaging
+    //w_k is the parameters of client_model
+    upload_params(w_K, num_shards)
+
+    //wait until all clients return and orchestrator averages their parameters and then restart the loop
+    
