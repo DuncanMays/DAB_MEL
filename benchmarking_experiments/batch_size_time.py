@@ -19,23 +19,24 @@ criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
 
 print('importing data')
-x_global, y_global = download_training_data(120)
+# x_global, y_global = download_training_data(120)
+raw_data = mnist.load_data()
 
-# raw_data = mnist.load_data()
+print('preprocessing')
 
-# print('preprocessing')
+shard_size = 500
 
-# shard_size = 500
+x_train_raw = raw_data[0][0]
+y_train_raw = raw_data[0][1]
 
-# x_train_raw = raw_data[0][0]
-# y_train_raw = raw_data[0][1]
-
-# # formatting into sample shape
+# formatting into sample shape
 
 # sample_shape = config_object.sample_shape
+sample_shape = [784]
 
-# x_global = torch.tensor(x_train_raw, dtype=torch.float32).reshape([-1]+sample_shape)
-# y_global = torch.tensor(y_train_raw, dtype=torch.long)
+
+x_global = torch.tensor(x_train_raw, dtype=torch.float32).reshape([-1]+sample_shape)
+y_global = torch.tensor(y_train_raw, dtype=torch.long)
 
 def gradient_update(num_samples=32):
 

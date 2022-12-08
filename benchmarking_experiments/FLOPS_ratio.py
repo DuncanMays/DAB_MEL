@@ -1,3 +1,5 @@
+# the goal of this file is to determine the ratio between the training time for a shard of data on a real neural net, and the max FLOPS the GPU is capable of, as measure by matrix multiplication
+
 import torch
 import sys
 sys.path.append('..')
