@@ -16,20 +16,30 @@ device = config_object.training_device
 central_model = config_object.model_class()
 central_model.to(device)
 
-max_global_cycles = 10
+max_global_cycles = 5
 num_global_cycles = 0
+start_time = time.time()
 num_results_submitted = 0
 params = []
 weights = []
 
 training_stats = []
-training_stats.append(assess_parameters(central_model))
+
+loss, acc = assess_parameters(central_model)
+
+stat_dict = {
+	'loss': loss,
+	'acc': acc,
+	'time': -1
+}
+
+training_stats.append(stat_dict)
 
 @app.route("/result_submit", methods=['POST'])
 def result_submit():
 	print('results posted at /result_submit')
 
-	global num_results_submitted, params, weights, num_global_cycles, max_global_cycles
+	global num_results_submitted, params, weights, num_global_cycles, max_global_cycles, start_time
 
 	num_results_submitted += 1
 
@@ -51,6 +61,8 @@ def result_submit():
 
 		# we will run this function in a separate process
 		def wrapper_fn(params_list, weights):
+			global start_time
+
 			temp_net = config_object.model_class()
 
 			# print('assessing accuracy of '+str(len(params_list))+' returned parameters')
@@ -70,7 +82,20 @@ def result_submit():
 			print('aggregation process complete, network loss and accuracy is: ', end='')
 			print(loss, acc)
 
-			training_stats.append((loss, acc))
+			cycle_time = -1
+			if (start_time > 0):
+				cycle_time = time.time() - start_time
+			else:
+				# if start time is less than zero, than this iteration was the first and thus the start time was not recorded and so we'll report it as -1
+				cycle_time = -1
+
+			stat_dict = {
+				'loss': loss,
+				'acc': acc,
+				'time': cycle_time
+			}
+
+			training_stats.append(stat_dict)
 
 			# we now submit the aggregated parameters to the main process
 
@@ -78,18 +103,20 @@ def result_submit():
 				'params': serialize_params(temp_net.parameters())
 			}
 
+			# this req is sent on loopback to this app and a route defined below
 			set_url = 'http://localhost:'+str(config_object.orchestrator_port)+'/set_central_parameters'
-
 			requests.post(url=set_url, data=payload)
 
 			if (num_global_cycles < max_global_cycles):
+				print(f'starting another cycle on {len(worker_ips)} workers')
+				start_time = time.time()
 				start_global_cycle(worker_ips)
 
 			else:
 				print('done training, saving results')
 
 				f = open('training_results.json', 'a')
-				f.write(json.dumps(training_stats))
+				f.write(json.dumps(training_stats)+'\n')
 				f.close()
 
 		if fork():
@@ -160,8 +187,8 @@ def allocate(worker_characteristics):
 	return l
 
 worker_characteristics = []
-@app.route('/submit_characteristcs', methods=['POST'])
-def submit_characteristcs():
+@app.route('/submit_characteristics', methods=['POST'])
+def submit_characteristics():
 	global worker_ips, worker_characteristics
 
 	info_obj = {

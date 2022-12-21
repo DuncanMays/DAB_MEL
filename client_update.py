@@ -5,6 +5,7 @@ import json
 from config import config_object
 from utils import set_parameters, serialize_params, deserialize_params, download_training_data, val_evaluation
 from tqdm import tqdm
+import time
 
 ModelClass = config_object.model_class
 device = config_object.training_device
@@ -39,6 +40,8 @@ def client_update(orchestrator_ip):
 	print('starting training process')
 	global net, optimizer
 
+	start_time = time.time()
+
 	# the URL to return trained parameters to
 	parameters_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/get_parameters'
 
@@ -72,7 +75,8 @@ def client_update(orchestrator_ip):
 	print('submitting result')
 	payload = {
 		'num_shards': num_shards,
-		'params': serialize_params(net.parameters())
+		'params': serialize_params(net.parameters()),
+		'time': time.time() - start_time,
 	}
 
 	return payload

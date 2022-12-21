@@ -75,6 +75,7 @@ def init_procedure():
 		}))
 		f.close()
 
+		print('init complete, settings written to file')
 		return json.dumps({'payload': 'this is the fork'})
 
 	else:
@@ -94,7 +95,7 @@ def baseline_init_start():
 			'model_size': model_size
 		}
 
-		DA_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/submit_characteristcs'
+		DA_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/submit_characteristics'
 		requests.post(url=DA_url, data=info)
 
 		return json.dumps({'payload': 'this is the fork'})
@@ -125,6 +126,7 @@ def baseline_init_end():
 	}))
 	f.close()
 
+	print('baseline init complete, settings written to file')
 	return json.dumps({'payload': 'recorded info'})
 
 print('notifying notice board')
