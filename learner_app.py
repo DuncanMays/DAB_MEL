@@ -28,6 +28,7 @@ signal.signal(signal.SIGINT, shutdown_handler)
 
 app = Flask(__name__)
 
+# this route starts the training routine and is usaully called by orchestrator
 @app.route("/start_learning", methods=['GET'])
 def start_learning():
 	print('get received')
@@ -48,6 +49,7 @@ def start_learning():
 	else:	
 		return json.dumps({'payload': 'training now'})
 
+# this route runs the subset benchmark and local DAB routine
 @app.route("/init_procedure", methods=['GET'])
 def init_procedure():
 
@@ -78,6 +80,7 @@ def init_procedure():
 	else:
 		return json.dumps({'payload': 'running benchmarks'})
 
+# this route runs the subset benchmark then the baseline data allocation routine. It sends a POST req containing its benchmark scores to the orchestrator, which runs the optimizer and sends a POST req back with training settings
 @app.route("/baseline_init_start", methods=['GET'])
 def baseline_init_start():
 
@@ -99,6 +102,7 @@ def baseline_init_start():
 	else:
 		return json.dumps({'payload': 'running benchmarks'})
 
+# this is the second route involved in the baseline init procedure. The first one above sends a POST req to the orchestrator, which does some processing, and then responds with a POST req of its own which triggers this route which writes training settings to file.
 @app.route("/baseline_init_end", methods=['POST'])
 def baseline_init_end():
 

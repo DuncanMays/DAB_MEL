@@ -34,6 +34,8 @@ def download_training_data(num_shards):
 	x = torch.tensor(training_data['x_data'])/255.0
 	y = torch.tensor(training_data['y_data'])
 
+	del training_data
+
 	return x, y
 
 # gets the accuracy and loss of net on testing data
