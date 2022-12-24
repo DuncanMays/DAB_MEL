@@ -7,14 +7,17 @@ from utils import set_parameters, serialize_params, deserialize_params, download
 from tqdm import tqdm
 import time
 
+torch.autograd.set_detect_anomaly(True)
+
 ModelClass = config_object.model_class
 device = config_object.training_device
 
-net = ModelClass().to(device)
+net = ModelClass()
 criterion = torch.nn.CrossEntropyLoss()
 
 def train_network(tau, x, y):
 	global net
+	net = net.to(device)
 	optimizer = torch.optim.SGD([{'params': net.parameters()}], lr=config_object.client_learning_rate)
 
 	BATCH_SIZE = 32
@@ -33,6 +36,7 @@ def train_network(tau, x, y):
 			loss = criterion(y_hat, y_batch)
 		
 			optimizer.zero_grad()
+
 			loss.backward()
 			optimizer.step()
 
@@ -59,7 +63,7 @@ def client_update(orchestrator_ip):
 	params_resp = requests.get(parameters_url)
 
 	set_parameters(net, deserialize_params(params_resp.content))
-	net = net.to(device)
+	net.to(device)
 
 	# print('testing parameters')
 	# loss, acc = val_evaluation(net, x_train, y_train)
@@ -72,7 +76,8 @@ def client_update(orchestrator_ip):
 	# loss, acc = val_evaluation(net, x_train, y_train)
 	# print(acc)
 
-	print('submitting result')
+	print('training complete')
+	
 	payload = {
 		'num_shards': num_shards,
 		'params': serialize_params(net.parameters()),

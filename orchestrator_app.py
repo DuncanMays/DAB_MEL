@@ -3,6 +3,7 @@ from flask import Flask
 import requests
 from flask import request as route_req
 from os import fork
+from threading import Thread, Event
 from aggregate import aggregate_parameters, assess_parameters
 import time
 import json
@@ -18,6 +19,7 @@ central_model.to(device)
 
 max_global_cycles = 5
 num_global_cycles = 0
+trial_complete_event = Event()
 start_time = time.time()
 num_results_submitted = 0
 params = []
@@ -35,108 +37,95 @@ stat_dict = {
 
 training_stats.append(stat_dict)
 
+worker_ips = get_active_worker_ips()
+
+@app.route("/reset", methods=['GET'])
+def reset_orchestrator():
+	num_global_cycles = 0
+	num_results_submitted = 0
+	params = []
+	weights = []
+
 @app.route("/result_submit", methods=['POST'])
 def result_submit():
-	print('results posted at /result_submit')
-
 	global num_results_submitted, params, weights, num_global_cycles, max_global_cycles, start_time
 
-	num_results_submitted += 1
+	print(f'results posted at /result_submit, {num_results_submitted}')
 
 	# storing results
 	result = route_req.form
 	params.append(deserialize_params(result['params']))
 	weights.append(int(result['num_shards']))
 
+	num_results_submitted += 1
 	if (num_results_submitted < len(worker_ips)):
-
 		return json.dumps({'payload': 'storing result'})
 
 	else:
+		cycle_time = time.time() - start_time
+
 		# we now aggregate the results
 		num_global_cycles += 1
 
 		# normalizing all the weights
 		weights = [w/sum(weights) for w in weights]
 
-		# we will run this function in a separate process
-		def wrapper_fn(params_list, weights):
-			global start_time
+		temp_net = config_object.model_class()
 
-			temp_net = config_object.model_class()
+		# print('assessing accuracy of '+str(len(params_list))+' returned parameters')
+		# for p in params_list:
+		# 	new_params = p
+		# 	set_parameters(temp_net, new_params)
+		# 	loss, acc = assess_parameters(temp_net)
+		# 	print('accuracy of returned network is: ', end='')
+		# 	print(acc)
 
-			# print('assessing accuracy of '+str(len(params_list))+' returned parameters')
-			# for p in params_list:
-			# 	new_params = p
-			# 	set_parameters(temp_net, new_params)
-			# 	loss, acc = assess_parameters(temp_net)
-			# 	print('accuracy of returned network is: ', end='')
-			# 	print(acc)
+		new_params = aggregate_parameters(params, weights)
 
-			new_params = aggregate_parameters(params_list, weights)
+		set_parameters(temp_net, new_params)
 
-			set_parameters(temp_net, new_params)
+		loss, acc = assess_parameters(temp_net)
 
-			loss, acc = assess_parameters(temp_net)
+		print('aggregation process complete, network loss and accuracy is: ', end='')
+		print(loss, acc)
 
-			print('aggregation process complete, network loss and accuracy is: ', end='')
-			print(loss, acc)
+		stat_dict = {
+			'loss': loss,
+			'acc': acc,
+			'time': cycle_time
+		}
 
-			cycle_time = -1
-			if (start_time > 0):
-				cycle_time = time.time() - start_time
-			else:
-				# if start time is less than zero, than this iteration was the first and thus the start time was not recorded and so we'll report it as -1
-				cycle_time = -1
+		training_stats.append(stat_dict)
 
-			stat_dict = {
-				'loss': loss,
-				'acc': acc,
-				'time': cycle_time
-			}
+		# we now submit the aggregated parameters to the main process
 
-			training_stats.append(stat_dict)
+		payload = {
+			'params': serialize_params(temp_net.parameters())
+		}
 
-			# we now submit the aggregated parameters to the main process
+		# this req is sent on loopback to this app and a route defined below
+		set_url = 'http://localhost:'+str(config_object.orchestrator_port)+'/set_central_parameters'
+		requests.post(url=set_url, data=payload)
 
-			payload = {
-				'params': serialize_params(temp_net.parameters())
-			}
+		if (num_global_cycles < max_global_cycles):
+			print(f'starting another cycle on {len(worker_ips)} workers')
 
-			# this req is sent on loopback to this app and a route defined below
-			set_url = 'http://localhost:'+str(config_object.orchestrator_port)+'/set_central_parameters'
-			requests.post(url=set_url, data=payload)
-
-			if (num_global_cycles < max_global_cycles):
-				print(f'starting another cycle on {len(worker_ips)} workers')
-				start_time = time.time()
-				start_global_cycle(worker_ips)
-
-			else:
-				print('done training, saving results')
-
-				f = open('training_results.json', 'a')
-				f.write(json.dumps(training_stats)+'\n')
-				f.close()
-
-		if fork():
-			# aggregates and assesses parameters
-			wrapper_fn(params, weights)
-
-			# resetting trackers
-			num_results_submitted = 0
+			# resetting
 			params = []
 			weights = []
 
-			return json.dumps({'payload': 'this is the fork'})
+			start_cycle()
 
 		else:
-			# resetting trackers
-			num_results_submitted = 0
-			params = []
-			weights = []
-			
-			return json.dumps({'payload': 'aggregating results'})
+			print('done training, saving results')
+
+			f = open('training_results.json', 'a')
+			f.write(json.dumps(training_stats)+'\n')
+			f.close()
+
+			trial_complete_event.set()
+
+		return json.dumps({'payload': 'aggregating results'})
 
 @app.route("/get_parameters", methods=['GET'])
 def get_parameters():
@@ -154,6 +143,24 @@ def set_central_parameters():
 @app.route('/get_training_time_limit', methods=['GET'])
 def get_training_time_limit():
 	return str(config_object.client_training_time)
+	
+@app.route('/shutdown', methods=['GET'])
+def shutdown():
+
+	func = route_req.environ.get('werkzeug.server.shutdown')
+	if func is None:
+		raise RuntimeError('Not running with the Werkzeug Server')
+	func()
+
+	return 'shutting down'
+
+@app.route('/start_cycle', methods=['GET'])
+def start_cycle():
+	print(f'starting global cycle on {len(worker_ips)} workers')
+	num_results_submitted = 0
+	start_time = time.time()
+	start_global_cycle(worker_ips)
+	return 'starting global cycle'
 
 total_shards = 120
 def allocate(worker_characteristics):
@@ -229,8 +236,34 @@ def submit_characteristics():
 		else:
 			return json.dumps({'payload': 'processing characteristics'})			
 
+def init():
 
-worker_ips = get_active_worker_ips()
 
-print('starting orchestration app for '+str(len(worker_ips))+' workers')
-app.run(host='0.0.0.0', port=config_object.orchestrator_port)
+def app_fn():
+	print('starting orchestration app for '+str(len(worker_ips))+' workers')
+	app.run(host='0.0.0.0', port=config_object.orchestrator_port)
+
+def main():
+	num_trials = 10
+
+	app_thread = Thread(target=app_fn, daemon=True)
+	app_thread.start()
+
+	for t in range(num_trials):
+		
+		# these lines allocate data to each worker, using either DAB or the baseline CSA
+		init()
+		# baseline_init()
+
+		# this line starts the learning process
+		start_cycle()
+
+		# waits for the trial to complete, then resets everything and loops
+		trial_complete_event.wait()
+		trial_complete_event = Event()
+		reset_orchestrator()
+
+	exit()
+
+if (__name__ == '__main__'):
+	main()

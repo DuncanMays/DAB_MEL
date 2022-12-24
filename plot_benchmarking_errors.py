@@ -67,6 +67,7 @@ plt.ylabel('Average Runtime Benchmarking Error (%)', size=font_size)
 plt.xlabel('Benchmark Size (data shards)', size=font_size)
 
 plt.legend(prop={'size': font_size})
+plt.title('Training Time Prediction Error', size=25)
 plt.show()
 
 y_ticks = [i for i in range(0, 22, 2)]
@@ -79,4 +80,5 @@ plt.ylabel('Average Network Benchmarking Error (%)', size=font_size)
 plt.xlabel('Benchmark Size (data shards)', size=font_size)
 
 # plt.legend(prop={'size': font_size})
+plt.title('Download Time Prediction Error', size=25)
 plt.show()

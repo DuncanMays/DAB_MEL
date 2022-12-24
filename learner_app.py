@@ -2,6 +2,7 @@ from config import config_object
 from flask import Flask
 from flask import request as route_req
 from multiprocessing import set_start_method
+from threading import Thread
 from client_update import client_update
 from init_procedure import subset_benchmark, get_model_size, get_training_time_limit
 from os import fork
@@ -31,61 +32,68 @@ app = Flask(__name__)
 # this route starts the training routine and is usaully called by orchestrator
 @app.route("/start_learning", methods=['GET'])
 def start_learning():
-	print('get received')
-
 	orchestrator_ip = route_req.remote_addr
 
 	def wrapper_fn(orch_ip):
 		result = client_update(orchestrator_ip)
 
-		print('training completed, submitting results')
+		print('submitting results')
 		result_url = 'http://'+config_object.parameter_server_ip+':'+str(config_object.parameter_server_port)+'/result_submit'
 		x = requests.post(url=result_url, data=result)
 		print(x.content)
 
-	if fork():
-		wrapper_fn(orchestrator_ip)
-		return json.dumps({'payload': 'this is the fork'})
-	else:	
-		return json.dumps({'payload': 'training now'})
+	training_thread = Thread(target=wrapper_fn, args=(orchestrator_ip, ))
+	training_thread.start()
+
+	return json.dumps({'payload': 'training now'})
+
+	# if fork():
+	# 	wrapper_fn(orchestrator_ip)
+	# 	return json.dumps({'payload': 'this is the fork'})
+	# else:	
+	# 	return json.dumps({'payload': 'training now'})
+
+	# wrapper_fn(orchestrator_ip)
+	# return json.dumps({'payload': 'training now'})
 
 # this route runs the subset benchmark and local DAB routine
 @app.route("/init_procedure", methods=['GET'])
 def init_procedure():
 
-	if fork():
-		download_rate, training_rate = subset_benchmark(num_shards=8)
-		model_size = get_model_size()
+	# if fork():
+	download_rate, training_rate = subset_benchmark(num_shards=8)
+	model_size = get_model_size()
+	deadline = get_training_time_limit()
 
-		deadline = get_training_time_limit()
+	print('training time limit is:', deadline)
 
-		print('training time limit is:', deadline)
+	num_shards = round((deadline - 2*model_size/download_rate)/(config_object.client_num_updates/training_rate + 1/download_rate))
+	num_shards = max(1, num_shards)
 
-		num_shards = round((deadline - 2*model_size/download_rate)/(config_object.client_num_updates/training_rate + 1/download_rate))
-		num_shards = max(1, num_shards)
+	f = open(config_object.init_config_file, 'w')
+	f.write(json.dumps({
+		'num_shards': num_shards,
+		'model_size': model_size,
+		'num_iterations': config_object.client_num_updates,
+		'download_rate': download_rate,
+		'training_rate': training_rate,
+		'deadline': config_object.client_training_time
+	}))
+	f.close()
 
-		f = open(config_object.init_config_file, 'w')
-		f.write(json.dumps({
-			'num_shards': num_shards,
-			'model_size': model_size,
-			'num_iterations': config_object.client_num_updates,
-			'download_rate': download_rate,
-			'training_rate': training_rate,
-			'deadline': config_object.client_training_time
-		}))
-		f.close()
+	print('init complete, settings written to file')
+	return json.dumps({'payload': 'this is the fork'})
 
-		print('init complete, settings written to file')
-		return json.dumps({'payload': 'this is the fork'})
-
-	else:
-		return json.dumps({'payload': 'running benchmarks'})
+	# else:
+	# 	return json.dumps({'payload': 'running benchmarks'})
 
 # this route runs the subset benchmark then the baseline data allocation routine. It sends a POST req containing its benchmark scores to the orchestrator, which runs the optimizer and sends a POST req back with training settings
 @app.route("/baseline_init_start", methods=['GET'])
 def baseline_init_start():
 
 	if fork():
+		print('baseline_init begin')
+
 		download_rate, training_rate = subset_benchmark(num_shards=8)
 		model_size = get_model_size()
 
@@ -106,8 +114,6 @@ def baseline_init_start():
 # this is the second route involved in the baseline init procedure. The first one above sends a POST req to the orchestrator, which does some processing, and then responds with a POST req of its own which triggers this route which writes training settings to file.
 @app.route("/baseline_init_end", methods=['POST'])
 def baseline_init_end():
-
-	print(route_req.form)
 
 	info = route_req.form
 
