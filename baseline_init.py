@@ -1,12 +1,26 @@
+import asyncio
+import aiohttp
 from config import config_object
-from utils import start_global_cycle, get_active_worker_ips
-import requests
+from utils import get_active_worker_ips
 
-print('discovering workers')
-notice_board_resp = requests.get('http://'+str(config_object.notice_board_ip)+':'+str(config_object.notice_board_port)+'/notice_board')
+async def async_GET(url):
+	async with aiohttp.ClientSession() as session:
+		async with session.get(url) as resp:
+			return resp.status, await resp.text()
+
 worker_ips = get_active_worker_ips()
 
-print('starting '+str(len(worker_ips))+' baseline init process')
-for ip in worker_ips:
-	url = 'http://'+ip+':'+str(config_object.learner_port)+'/baseline_init_start'
-	requests.get(url)
+async def init_worker(w_ip):
+	url = 'http://'+w_ip+':'+str(config_object.learner_port)+'/basaeline_init_procedure'
+	return await async_GET(url)
+
+async def baseline_init():
+	init_promises = []
+
+	for w_ip in worker_ips:
+		init_promises.append(init_worker(w_ip))
+
+	await asyncio.gather(*init_promises)
+
+if (__name__ == '__main__'):
+	asyncio.run(baseline_init())

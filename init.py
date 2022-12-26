@@ -14,7 +14,7 @@ async def init_worker(w_ip):
 	url = 'http://'+w_ip+':'+str(config_object.learner_port)+'/init_procedure'
 	return await async_GET(url)
 
-async def main():
+async def init():
 	init_promises = []
 
 	for w_ip in worker_ips:
@@ -23,4 +23,4 @@ async def main():
 	await asyncio.gather(*init_promises)
 
 if (__name__ == '__main__'):
-	asyncio.run(main())
+	asyncio.run(init())
