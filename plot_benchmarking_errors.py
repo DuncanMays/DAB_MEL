@@ -8,9 +8,10 @@ import json
 # SB4 = [2.1, 1.3, 0.3, 0.1, 4.3]
 # SB8 = [0.1, 0.4, 0.3, 0.5, 2.1]
 
-target_file = './benchmarking_experiments/nano_prediction_errors_2.json'
+# target_file = './benchmarking_experiments/nano_prediction_errors_2.json'
+target_file = './benchmarking_experiments/laptop_results/prediction_accuracies_6.json'
 
-SB_sizes = [2, 4, 6, 8]
+SB_sizes = [2, 4, 6, 8, 10]
 data = None
 
 with open(target_file, 'r') as f:
@@ -57,6 +58,7 @@ flops_data = [training_errors[0] for d in data]
 
 x = [2, 4, 6, 8, 10]
 y_ticks = [i for i in range(0, 65, 5)]
+print(x)
 
 plt.plot(x, data, color='red', label='SB')
 plt.plot(x, flops_data, color='green', label='FLOPS')
@@ -70,7 +72,7 @@ plt.legend(prop={'size': font_size})
 plt.title('Training Time Prediction Error', size=25)
 plt.show()
 
-y_ticks = [i for i in range(0, 22, 2)]
+y_ticks = [i for i in range(0, 45, 5)]
 
 plt.plot(x, network_errors, color='red', label='SB')
 

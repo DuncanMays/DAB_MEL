@@ -10,8 +10,8 @@ def set_training_device():
 
 primative = {
 	'client_learning_rate': 0.1,
-	'client_num_updates': 1,
-	'client_training_time': 15,
+	'client_num_updates': 2,
+	'client_training_time': 30,
 	'data_server_ip': '192.168.0.45',
 	'data_server_port': 5003,
 	'init_config_file': './init_config.json',

@@ -34,8 +34,6 @@ def aggregate_parameters(param_list, weights):
 	return avg_params
 
 def assess_parameters(net):
-	print('assess_parameters has been called')
-
 	loss, acc = val_evaluation(net, x_test, y_test)
 
 	return loss, acc

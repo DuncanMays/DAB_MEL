@@ -81,7 +81,7 @@ def init_procedure():
 	}))
 	f.close()
 
-	print('init complete, settings written to file')
+	print(f'init complete, settings written to file, {num_shards} shards of data allocated')
 	return json.dumps({'payload': 'this is the fork'})
 
 	# else:
